@@ -15,8 +15,8 @@ app.use(cors());
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "tzrm9501",  //password for mysql db
-  database: "leave_management"  //name of database
+  password: "",  //password for mysql db
+  database: ""  //name of database
 });
 // Connect to MySQL
 db.connect((err) => {
