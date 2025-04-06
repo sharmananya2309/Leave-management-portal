@@ -15,8 +15,8 @@ app.use(cors());
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "tzrm9501",  //password for mysql db
-  database: "leave_management"  //name of database
+  password: "",  //password for mysql db
+  database: ""  //name of database
 });
 // Connect to MySQL
 db.connect((err) => {
@@ -162,6 +162,7 @@ app.get("/leave_requests",(req,res)=>{
   FROM leaves l
   JOIN users u ON l.user_id=u.id
   WHERE l.status='Pending'
+  AND end_date >= CURDATE()
   ORDER BY l.start_date ASC`;
 
   db.query(query,(err,results)=>
@@ -170,25 +171,28 @@ app.get("/leave_requests",(req,res)=>{
     res.status(200).json(results);
   });
 });
-//API for leave requests for pop-up option(when a leave req is clicked by hod)
-app.get("/leave_requests/:id",(req,res)=>{
-  const leaveId=req.params.id;
-  const query=`SELECT l.id,l.user_id,l.leave_type,l.start_date,l.end_date,l.reason
-  FROM leaves l
-  JOIN users u ON l.user_id=u.id
-  WHERE l.id=?`;
 
-  db.query(query,[leaveId],(err,results)=>{
-    if(err) return res.status(500).json({message:"Database Error",error:err});
-   
-    console.log("Fetching leave request for ID:", leaveId);
-
-    if(results.length===0){
-      return res.status(404).json({message:"Leave request not found"});
-    }
-    res.status(200).json(results[0]);
+//api to see approved and rejected leave req in hod page
+app.get('/approved-rejected',(req,res)=>{
+  const query =`SELECT * FROM leaves WHERE status IN ('Approved','Rejected')`;
+  db.query(query,(err,result)=>{
+    if(err) return res.status(500).send(err);
+    res.json(result);
   });
 });
+
+
+//api to get leave history :all the approved,pending,rejected where date<current date
+app.get('/leave-history',(req,res)=>{
+  const query=`SELECT * FROM leaves WHERE end_date <CURDATE() AND status IN ('Pending', 'Approved', 'Rejected')
+    ORDER BY start_date ASC `;
+  db.query(query,(err,result)=>{
+    if(err) return res.status(500).send(err);
+    res.json(result);
+  });
+});
+
+
 //API to approve or reject leaves
 app.put("/update_leaves_status/:id",(req,res)=>{
   const leaveId=req.params.id;
@@ -225,3 +229,24 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 module.exports = db;
+
+
+//API for leave requests for pop-up option(when a leave req is clicked by hod)
+// app.get("/leave_requests/:id",(req,res)=>{
+//   const leaveId=req.params.id;
+//   const query=`SELECT l.id,l.user_id,l.leave_type,l.start_date,l.end_date,l.reason
+//   FROM leaves l
+//   JOIN users u ON l.user_id=u.id
+//   WHERE l.id=?`;
+
+//   db.query(query,[leaveId],(err,results)=>{
+//     if(err) return res.status(500).json({message:"Database Error",error:err});
+   
+//     console.log("Fetching leave request for ID:", leaveId);
+
+//     if(results.length===0){
+//       return res.status(404).json({message:"Leave request not found"});
+//     }
+//     res.status(200).json(results[0]);
+//   });
+// });
